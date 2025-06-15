@@ -143,7 +143,6 @@ class _AnalysisPage extends State<AnalysisPage> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // --- Filter Options ---
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceAround,
               children: [
@@ -194,8 +193,6 @@ class _AnalysisPage extends State<AnalysisPage> {
               ],
             ),
             const SizedBox(height: 20),
-
-            // --- Summary Cards ---
             Card(
               elevation: 2,
               margin: const EdgeInsets.symmetric(vertical: 8),

@@ -140,9 +140,9 @@ class _AddTransactionPage extends State<AddTransactionPage>{
         backgroundColor: (Color(0xffdfe2fe)),
         title: Text("Tambah Transaksi",
           style: TextStyle(
-            color: Color(0xff7971ea),
             fontWeight: FontWeight.w700,
-            fontSize: 18
+              color: Color(0xff7971ea),
+              fontSize: 18
           ),
         ),
       ),

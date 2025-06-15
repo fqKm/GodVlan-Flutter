@@ -7,7 +7,6 @@ import 'package:godvlan/service/AuthService.dart';
 import 'package:http/http.dart' as http;
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:intl/intl.dart';
-import 'package:sqflite/sqflite.dart';
 
 final GlobalKey<_TransactionListPage> transactionListPageKey = GlobalKey<_TransactionListPage>();
 class TransactionListPage extends StatefulWidget{
@@ -138,10 +137,15 @@ class _TransactionListPage extends State<TransactionListPage>{
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Daftar Transaksi'),
+        title: const Text(
+            'Daftar Transaksi',
+        style: TextStyle(
+          color: Color(0xff7971ea),
+          fontWeight: FontWeight.w900
+        ),),
         actions: [
           IconButton(
-            icon: const Icon(Icons.refresh),
+            icon: const Icon(Icons.refresh, color: Color(0xff7971ea),),
             onPressed: _mockLoadTransaction,
             tooltip: 'Refresh Transaksi',
           )
@@ -185,46 +189,41 @@ class _TransactionListPage extends State<TransactionListPage>{
             DataColumn(
               label: Text(
                 'Tanggal',
-                style: TextStyle(fontWeight: FontWeight.bold),
+                style: TextStyle(fontWeight: FontWeight.bold, color: Color(0xff7971ea)),
               ),
             ),
             DataColumn(
               label: Text(
                 'Deskripsi',
-                style: TextStyle(fontWeight: FontWeight.bold),
+                style: TextStyle(fontWeight: FontWeight.bold, color: Color(0xff7971ea)),
               ),
             ),
             DataColumn(
               label: Text(
                 'Nominal',
-                style: TextStyle(fontWeight: FontWeight.bold),
+                style: TextStyle(fontWeight: FontWeight.bold, color: Color(0xff7971ea)),
                 textAlign: TextAlign.right,
               ),
               numeric: true,
-            ),
-            DataColumn(
-              label: Text(
-                'Jenis',
-                style: TextStyle(fontWeight: FontWeight.bold),
-              ),
-            ),
+            )
           ],
           rows: _transactions.map((transaction) {
             return DataRow(
               onSelectChanged: (isSelected) {
                 if (isSelected ?? false) {
-                  // _navigateToTransactionDetail(transaction);
                   print("Yuhu");
                 }
               },
               cells: <DataCell>[
-                DataCell(Text(DateFormat('dd MMM yyyy').format(transaction.createdAt))),
+                DataCell(Text(
+                    DateFormat('dd MMM yyyy').format(transaction.createdAt), style: TextStyle(color: Color(0xff7971ea)))),
                 DataCell(
-                  SizedBox( // Gunakan SizedBox untuk membatasi lebar deskripsi
-                    width: 150, // Sesuaikan lebar yang diinginkan
+                  SizedBox(
+                    width: 150,
                     child: Text(
                       transaction.deskripsi,
-                      overflow: TextOverflow.ellipsis, // Tambahkan ellipsis jika teks terlalu panjang
+                      style: TextStyle(color: Color(0xff7971ea)),
+                      overflow: TextOverflow.ellipsis,
                     ),
                   ),
                 ),
@@ -233,12 +232,11 @@ class _TransactionListPage extends State<TransactionListPage>{
                     NumberFormat.currency(locale: 'id', symbol: 'Rp ').format(transaction.nominal),
                     textAlign: TextAlign.right,
                     style: TextStyle(
-                      color: transaction.jenisTransaksi == JenisTransaksi.income ? Colors.green : Colors.red,
+                      color: transaction.jenisTransaksi == JenisTransaksi.income ? Colors.green : Color(0xffff004d),
                       fontWeight: FontWeight.bold,
                     ),
                   ),
                 ),
-                DataCell(Text(transaction.jenisTransaksi == JenisTransaksi.income ? 'Masuk' : 'Keluar')),
               ],
             );
           }).toList(),
