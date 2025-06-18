@@ -3,10 +3,14 @@ import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:godvlan/db/SqliteHelper.dart';
 import 'package:godvlan/model/Transaksi.dart';
+import 'package:godvlan/page/EditTransactionPage.dart';
 import 'package:godvlan/service/AuthService.dart';
 import 'package:http/http.dart' as http;
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:intl/intl.dart';
+import 'package:flutter_dotenv/flutter_dotenv.dart';
+
+import 'AddTransactionPage.dart';
 
 final GlobalKey<_TransactionListPage> transactionListPageKey = GlobalKey<_TransactionListPage>();
 class TransactionListPage extends StatefulWidget{
@@ -25,7 +29,7 @@ class _TransactionListPage extends State<TransactionListPage>{
   String? _errorMessage;
   int? _selectedYear;
   List<int> _availableYears = [];
-  final String _api_url = 'https://ac-interracial-ent-audio.trycloudflare.com';
+  final String _api_url = dotenv.get('API_URL');
 
   @override
   void initState() {
@@ -36,7 +40,7 @@ class _TransactionListPage extends State<TransactionListPage>{
 
   void _initializeYears() {
     final currentYear = DateTime.now().year;
-    for (int i = 0; i < 4; i++) {
+    for (int i = 0; i < 10; i++) {
       _availableYears.add(currentYear - i);
     }
     _selectedYear = currentYear;
@@ -98,6 +102,17 @@ class _TransactionListPage extends State<TransactionListPage>{
     }
   }
 
+  void _navigateToAddTransactionPage() async {
+    final result = await Navigator.push(
+      context,
+      MaterialPageRoute(builder: (context) => const AddTransactionPage()),
+    );
+
+    if (result == true) {
+      fetchTransactionFromApi();
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -118,8 +133,11 @@ class _TransactionListPage extends State<TransactionListPage>{
       ),
       body:
       Padding(
-          padding: const EdgeInsets.all(16.0),
-          child: Column(
+          padding: const EdgeInsets.all(10.0),
+          child: SafeArea(
+          child: SingleChildScrollView(
+            padding: EdgeInsets.only(top: 10),
+          child :Column(
             children: [
               DropdownButtonFormField<int?>(
                 decoration: const InputDecoration(
@@ -172,8 +190,8 @@ class _TransactionListPage extends State<TransactionListPage>{
                   : SingleChildScrollView(
                 scrollDirection: Axis.horizontal,
                 child: DataTable(
-                  columnSpacing: 24.0,
-                  dataRowMinHeight: 48.0,
+                  columnSpacing: 20.0,
+                  dataRowMinHeight: 50.0,
                   dataRowMaxHeight: 60.0,
                   showCheckboxColumn: false,
                   columns: const <DataColumn>[
@@ -202,15 +220,15 @@ class _TransactionListPage extends State<TransactionListPage>{
                     return DataRow(
                       onSelectChanged: (isSelected) {
                         if (isSelected ?? false) {
-                          print("Yuhu");
+                          Navigator.pushReplacement(context, MaterialPageRoute(builder: (context) => EditTransactionPage(transactionId: transaction.id)));
                         }
                       },
                       cells: <DataCell>[
                         DataCell(Text(
-                            DateFormat('dd MMM yyyy').format(transaction.createdAt), style: TextStyle(color: Color(0xff7971ea)))),
+                            DateFormat('dd-MMM-yyyy').format(transaction.createdAt), style: TextStyle(color: Color(0xff7971ea)))),
                         DataCell(
                           SizedBox(
-                            width: 150,
+                            width: 120,
                             child: Text(
                               transaction.deskripsi,
                               style: TextStyle(color: Color(0xff7971ea)),
@@ -235,6 +253,30 @@ class _TransactionListPage extends State<TransactionListPage>{
               ),
             ],
           )
+          )
+          )
+      ),
+      floatingActionButton: ElevatedButton(
+        style: ButtonStyle(
+          iconColor: WidgetStateProperty.resolveWith<Color?>(
+                  (Set<WidgetState> states){
+                if(states.contains(WidgetState.pressed)){
+                  return Color(0xffffffff);
+                }
+                return Color(0xFF7971EA);
+              }
+          ),
+          backgroundColor: WidgetStateProperty.resolveWith<Color?>(
+                (Set<WidgetState> states) {
+              if (states.contains(WidgetState.pressed)) {
+                return Color(0xFF7971EA);
+              }
+              return Color(0xffdfe2fe); // Use the component's default.
+            },
+          ),
+        ),
+        onPressed: _navigateToAddTransactionPage, // Panggil metode ini
+        child: const Icon(Icons.add),
       )
     );
   }

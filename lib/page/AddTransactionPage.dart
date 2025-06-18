@@ -9,6 +9,7 @@ import 'package:godvlan/widget/JenisTransaksiDropdown.dart';
 import 'package:godvlan/widget/NominalInputField.dart';
 import 'package:http/http.dart' as http;
 import 'package:uuid/uuid.dart';
+import 'package:flutter_dotenv/flutter_dotenv.dart';
 
 import '../db/SqliteHelper.dart';
 import 'HomePage.dart';
@@ -32,7 +33,7 @@ class _AddTransactionPage extends State<AddTransactionPage>{
   String? _jenisTransaksi;
   bool _isLoading = false;
   String? _errorMessage;
-  final String _api_url = 'https://ac-interracial-ent-audio.trycloudflare.com';
+  final String _api_url = dotenv.get('API_URL');
 
   @override
   void dispose(){
@@ -66,7 +67,7 @@ class _AddTransactionPage extends State<AddTransactionPage>{
     final body = json.encode({
       'tanggalTransaksi' : DateTime.now().toIso8601String(),
       'jenisTransaksi' : _jenisTransaksi.toString(),
-      'nominal' : _nominalController.text,
+      'nominal' : int.tryParse(_nominalController.text) ?? 0,
       'deskripsi' : _descriptionController.text,
     });
 

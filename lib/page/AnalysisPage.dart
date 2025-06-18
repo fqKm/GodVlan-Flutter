@@ -6,8 +6,8 @@ import 'package:godvlan/model/Transaksi.dart';
 import 'package:http/http.dart' as http;
 import 'package:intl/intl.dart';
 import 'package:fl_chart/fl_chart.dart';
-
-import '../service/AuthService.dart'; // Uncomment this line after adding fl_chart to pubspec.yaml
+import 'package:flutter_dotenv/flutter_dotenv.dart';
+import '../service/AuthService.dart';
 
 class AnalysisPage extends StatefulWidget {
   const AnalysisPage({super.key});
@@ -27,7 +27,7 @@ class _AnalysisPage extends State<AnalysisPage> {
   int? _selectedYear;
   int? _selectedMonth; // 1-12
   List<int> _availableYears = [];
-  final String _api_url = 'https://ac-interracial-ent-audio.trycloudflare.com';
+  final String _api_url = dotenv.get('API_URL');
 
   @override
   void initState() {

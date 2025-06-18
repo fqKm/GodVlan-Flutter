@@ -6,6 +6,7 @@ import 'package:godvlan/service/AuthService.dart';
 import 'package:godvlan/widget/ChatBubble.dart';
 import 'package:godvlan/widget/SnackbarUtil.dart';
 import 'package:http/http.dart' as http;
+import 'package:flutter_dotenv/flutter_dotenv.dart';
 
 class ChatBotPage extends StatefulWidget {
   const ChatBotPage({super.key});
@@ -15,7 +16,7 @@ class ChatBotPage extends StatefulWidget {
 }
 
 class _ChatBotPage extends State<ChatBotPage>{
-  final String _api_url = 'https://ac-interracial-ent-audio.trycloudflare.com';
+  final String _api_url = dotenv.get('API_URL');
   final TextEditingController _chatController = TextEditingController();
   bool _isLoading = false;
   String? _errorMessage;

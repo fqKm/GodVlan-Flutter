@@ -2,9 +2,11 @@ import 'package:flutter/material.dart';
 
 class JenisTransaksiDropdown extends StatefulWidget{
   final Function(String? value) onItemSelected;
+  final String? initialValue;
 
   const JenisTransaksiDropdown({
     super.key,
+    this.initialValue,
     required this.onItemSelected
   });
 
@@ -13,12 +15,19 @@ class JenisTransaksiDropdown extends StatefulWidget{
 }
 
 class _JenisTransaksiDropdown extends State<JenisTransaksiDropdown>{
+  String? selectedValue;
+  @override
+  void initState() {
+    selectedValue = widget.initialValue;
+    super.initState();
+  }
 
   @override
   Widget build(BuildContext context) {
     return DropdownMenu<String?>(
+      hintText: "Masukkan Jenis Transaksi",
+      initialSelection: selectedValue,
       leadingIcon: Icon(Icons.currency_exchange_rounded,color:  Color(0xff8480e5)),
-      hintText: "Pilih Jenis Transaksi",
       width: MediaQuery.of(context).size.width * 0.80,
       dropdownMenuEntries: <DropdownMenuEntry<String?>>
       [
@@ -50,6 +59,9 @@ class _JenisTransaksiDropdown extends State<JenisTransaksiDropdown>{
         hintStyle: TextStyle(color: Color(0xff7971ea)),
       ),
       onSelected: (String? value) {
+        setState(() {
+          selectedValue = value;
+        });
         widget.onItemSelected(value);
       },
     );

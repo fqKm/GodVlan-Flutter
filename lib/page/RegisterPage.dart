@@ -1,6 +1,7 @@
 import 'dart:convert';
 
 import 'package:flutter/material.dart';
+import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:godvlan/page/LoginPage.dart';
 import 'package:godvlan/widget/EmailInputField.dart';
 import 'package:godvlan/widget/PasswordInputField.dart';
@@ -26,7 +27,7 @@ class _RegisterPage extends State<RegisterPage>{
   bool _isLoading = false;
   String? _errorMessage;
   bool _obscurePassword = true;
-  final String _api_url = 'https://ac-interracial-ent-audio.trycloudflare.com';
+  final String _api_url = dotenv.get('API_URL');
 
   // Future<dynamic> mockRegister() async{
   //   setState(() {

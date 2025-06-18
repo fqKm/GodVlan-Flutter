@@ -7,6 +7,7 @@ import 'package:godvlan/service/AuthService.dart';
 import 'package:godvlan/widget/EmailInputField.dart';
 import 'package:godvlan/widget/PasswordInputField.dart';
 import 'package:http/http.dart' as http;
+import 'package:flutter_dotenv/flutter_dotenv.dart';
 
 class LoginPage extends StatefulWidget{
   const LoginPage({super.key});
@@ -23,7 +24,7 @@ class _LoginPage extends State<LoginPage>{
   bool _isLoading = false;
   String? _errorMessage;
   bool _obscurePassword = true;
-  final String _api_url = 'https://ac-interracial-ent-audio.trycloudflare.com';
+  final String _api_url = dotenv.get('API_URL');
 
   // Future<dynamic> _mockLogin() async {
   //   setState(() {

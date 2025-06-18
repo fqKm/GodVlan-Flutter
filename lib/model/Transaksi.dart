@@ -5,11 +5,11 @@ enum JenisTransaksi{
   pengeluaran}
 
 class Transaksi{
-  final String id;
-  final int nominal;
-  final String deskripsi;
-  final JenisTransaksi jenisTransaksi;
-  final DateTime createdAt;
+  String id;
+  int nominal;
+  String deskripsi;
+  JenisTransaksi jenisTransaksi;
+  DateTime createdAt;
 
   Transaksi({
     required this.id,
