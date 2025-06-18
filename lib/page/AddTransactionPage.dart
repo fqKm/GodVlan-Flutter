@@ -2,6 +2,7 @@ import 'dart:convert';
 
 import 'package:flutter/material.dart';
 import 'package:godvlan/model/Transaksi.dart';
+import 'package:godvlan/page/TransactionListPage.dart';
 import 'package:godvlan/service/AuthService.dart';
 import 'package:godvlan/widget/DescriptionInputField.dart';
 import 'package:godvlan/widget/JenisTransaksiDropdown.dart';
@@ -31,6 +32,7 @@ class _AddTransactionPage extends State<AddTransactionPage>{
   String? _jenisTransaksi;
   bool _isLoading = false;
   String? _errorMessage;
+  final String _api_url = 'https://ac-interracial-ent-audio.trycloudflare.com';
 
   @override
   void dispose(){
@@ -38,89 +40,46 @@ class _AddTransactionPage extends State<AddTransactionPage>{
     _nominalController.dispose();
     super.dispose();
   }
-  Future<dynamic> _mockAddTransaction() async {
-    setState(() {
-      _errorMessage = "Gagal Menambah Transaksi Test";
-      _isLoading = true;
-    });
-
-    final uuid = Uuid();
-    final mockId = uuid.v4();
-
-    final nominalValue = int.tryParse(_nominalController.text);
-    if (nominalValue == null) {
-      setState(() {
-        _errorMessage = 'Nominal harus berupa angka yang valid.';
-        _isLoading = false;
-      });
-      return;
-    }
-    final newTransaction = Transaksi(
-      id: mockId, // Gunakan UUID yang baru dibuat sebagai ID
-      nominal: nominalValue,
-      deskripsi: _descriptionController.text,
-      jenisTransaksi: JenisTransaksi.values.firstWhere((e) => e.name == _jenisTransaksi!),
-      createdAt: DateTime.now(),
-    );
-
-
-    try {
-      await SqliteHelper.instance.insertTransaction(newTransaction);
-      print('Transaksi berhasil ditambahkan ke SQLite (mock) dengan ID: $mockId'); // Tambahkan log ID
-      await Future.delayed(const Duration(seconds: 2));
-
-      setState(() {
-        _isLoading = false;
-      });
-      Navigator.pop(context, true);
-    } catch (e) {
-      setState(() {
-        _errorMessage = 'Gagal menyimpan transaksi (mock): $e';
-        _isLoading = false;
-      });
-    }
-  }
 
   Future<dynamic> addTransaction() async{
     if(!_formKey.currentState!.validate()){
       return;
     }
-
     setState(() {
       _isLoading = true;
       _errorMessage = null;
     });
 
-    final url = Uri.parse('localhost:8080:/api/transaction');
+    final url = Uri.parse('$_api_url/api/transaction/add');
     final token = await AuthService.getToken();
     if (token == null){
-      throw Exception('User Unauthorized');
+      setState(() {
+        _errorMessage = ('User Unauthorized');
+        _isLoading = false;
+      });
+      return;
     }
     final header = {
       'Content-type' : 'application/json',
-      'Authorization' : 'Bearer : $token'
+      'Authorization' : token
     };
     final body = json.encode({
+      'tanggalTransaksi' : DateTime.now().toIso8601String(),
+      'jenisTransaksi' : _jenisTransaksi.toString(),
       'nominal' : _nominalController.text,
-      'description' : _descriptionController.text,
-      'transaction_type' : _jenisTransaksi.toString(),
-      'createdAt': DateTime.now().toIso8601String(),
+      'deskripsi' : _descriptionController.text,
     });
 
     try{
       final response = await http.post(url, headers: header, body: body);
-      if (response.statusCode == 200){
+      if (response.statusCode == 201){
         final data = json.decode(response.body);
-        final newTransaction = Transaksi.fromJson(data);
-
-        await SqliteHelper.instance.insertTransaction(newTransaction);
-        print('Transaksi berhasil ditambahkan ke SQLite!');
-
         Navigator.pop(context, true);
       } else {
         final error = json.decode(response.body);
         setState(() {
-          _errorMessage = error['message'] ?? 'Gagal Menambah Transaksi';
+          _errorMessage = error['errors']['message'] ?? 'Gagal Menambah Transaksi';
+          _isLoading = false;
         });
       }
     } catch (e){
@@ -203,7 +162,7 @@ class _AddTransactionPage extends State<AddTransactionPage>{
                         SizedBox(width: 20),
 
                         _isLoading? Center(child:CircularProgressIndicator(color: Color(0xff7971ea))) : ElevatedButton(
-                            onPressed: _mockAddTransaction,
+                            onPressed: addTransaction,
                             child: Text(
                                 "Tambah Transaksi",
                                 style: TextStyle(

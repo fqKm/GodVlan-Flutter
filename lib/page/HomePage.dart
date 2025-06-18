@@ -8,7 +8,6 @@ import 'package:intl/date_symbol_data_local.dart';
 import 'ChatBotPage.dart';
 import 'TransactionListPage.dart';
 
-
 class HomePage extends StatefulWidget{
   const HomePage({super.key});
 
@@ -43,7 +42,7 @@ class _HomePage extends State<HomePage>{
     if (result == true) {
       print('HomePage: Transaksi baru berhasil ditambahkan, meminta refresh TransactionListPage.');
       // Panggil metode refresh di TransactionListPage melalui key-nya
-      transactionListPageKey.currentState?.refreshTransactions();
+      transactionListPageKey.currentState?.fetchTransactionFromApi();
     }
   }
 

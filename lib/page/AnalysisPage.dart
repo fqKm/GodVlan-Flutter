@@ -1,8 +1,13 @@
+import 'dart:convert';
+
 import 'package:flutter/material.dart';
 import 'package:godvlan/db/SqliteHelper.dart';
 import 'package:godvlan/model/Transaksi.dart';
+import 'package:http/http.dart' as http;
 import 'package:intl/intl.dart';
-import 'package:fl_chart/fl_chart.dart'; // Uncomment this line after adding fl_chart to pubspec.yaml
+import 'package:fl_chart/fl_chart.dart';
+
+import '../service/AuthService.dart'; // Uncomment this line after adding fl_chart to pubspec.yaml
 
 class AnalysisPage extends StatefulWidget {
   const AnalysisPage({super.key});
@@ -14,29 +19,73 @@ class AnalysisPage extends StatefulWidget {
 class _AnalysisPage extends State<AnalysisPage> {
   bool _isLoading = true;
   String? _errorMessage;
-  List<Transaksi> _transactions = []; // All transactions for analysis
+  List<Transaksi> _transactions = [];
   double _totalIncome = 0.0;
   double _totalOutcome = 0.0;
-  Map<int, Map<String, double>> _monthlySummary = {}; // {month: {'income': total, 'outcome': total}}
+  Map<int, Map<String, double>> _monthlySummary = {};
 
-  // For year/month selection
   int? _selectedYear;
   int? _selectedMonth; // 1-12
   List<int> _availableYears = [];
+  final String _api_url = 'https://ac-interracial-ent-audio.trycloudflare.com';
 
   @override
   void initState() {
     super.initState();
     _initializeYears();
-    _loadAnalysisData(); // Load all data by default
+    _loadAnalysisData();
   }
 
   void _initializeYears() {
     final currentYear = DateTime.now().year;
-    // Example: show current year and 2 previous years.
-    // You might want to populate this from actual transaction years in your DB.
-    for (int i = 0; i < 3; i++) {
+    for (int i = 0; i < 4; i++) {
       _availableYears.add(currentYear - i);
+    }
+  }
+
+  Future<List<Transaksi>> _fetchFromAPI(DateTime startDate, DateTime endDate) async{
+    String startDateStr = DateFormat('yyyy-MM-dd').format(startDate);
+    String endDateStr = DateFormat('yyyy-MM-dd').format(endDate);
+
+    final url = Uri.parse('$_api_url/api/transaction/history/date_range?start_date=$startDateStr&end_date=$endDateStr');
+    final token = await AuthService.getToken();
+    if(token == null) {
+      setState(() {
+        _errorMessage = "User Unauthorized. Harap Login Kembali";
+        _isLoading = false;
+      });
+      return [];
+    }
+    final header = {
+      'Content-type' : 'application/json',
+      'Authorization' : token
+    };
+
+    try {
+      final response = await http.get(url, headers: header);
+      if (response.statusCode == 200){
+        List<dynamic> data = json.decode(response.body)['data'];
+        return data.map((json) => Transaksi.fromJson(json)).toList();
+      } else {
+        final error = json.decode(response.body);
+        setState(() {
+          _errorMessage = error['errors']['message'] ?? 'Gagal Memuat Transaksi';
+          _isLoading = false;
+        });
+        return [];
+      }
+    } on http.ClientException catch (e){
+      setState(() {
+        _errorMessage= ('Tidak dapat terhubung ke server. $e');
+        _isLoading = false;
+      });
+      return [];
+    } catch (e){
+      setState(() {
+        _errorMessage = 'Terjadi Kesalahan saat memuat transaksi. Coba Lagi : $e';
+        _isLoading = false;
+      });
+      return[];
     }
   }
 
@@ -52,10 +101,26 @@ class _AnalysisPage extends State<AnalysisPage> {
 
     try {
       List<Transaksi> fetchedTransactions;
-      if (year == null) { // If no year is selected, load all transactions
-        fetchedTransactions = await SqliteHelper.instance.getAllTransaction();
+      if (year != null) { // If no year is selected, load all transactions
+          final DateTime startDate;
+          final DateTime endDate;
+
+          if (month != null) {
+            startDate = DateTime(year, month, 1);
+            endDate = (month < 12)
+                ? DateTime(year, month + 1, 1)
+                : DateTime(year + 1, 1, 1);
+          } else {
+            startDate = DateTime(year, 1, 1);
+            endDate = DateTime(year + 1, 1, 1);
+          }
+
+          fetchedTransactions = await _fetchFromAPI(startDate, endDate);
       } else { // Load transactions for the selected year
-        fetchedTransactions = await SqliteHelper.instance.getTransactionByYear(year);
+        final now = DateTime.now();
+        final startDate = DateTime(now.year - 1, now.month, now.day);
+        final endDate = now;
+        fetchedTransactions = await _fetchFromAPI(startDate, endDate);
       }
 
       // Filter by month if a month is selected
@@ -64,9 +129,8 @@ class _AnalysisPage extends State<AnalysisPage> {
       }
 
       _transactions = fetchedTransactions;
-      _processTransactionsForAnalysis(_transactions); // Process the fetched data
-
-      setState(() {}); // Trigger rebuild with processed data
+      _processTransactionsForAnalysis(_transactions);
+      setState(() {});
     } catch (e) {
       setState(() {
         _errorMessage = 'Gagal memuat data analisis: $e';
@@ -85,7 +149,7 @@ class _AnalysisPage extends State<AnalysisPage> {
     Map<int, Map<String, double>> tempMonthlySummary = {};
 
     for (var transaction in transactions) {
-      if (transaction.jenisTransaksi == JenisTransaksi.income) {
+      if (transaction.jenisTransaksi == JenisTransaksi.pemasukan) {
         tempIncome += transaction.nominal;
       } else {
         tempOutcome += transaction.nominal;
@@ -95,7 +159,7 @@ class _AnalysisPage extends State<AnalysisPage> {
       if (!tempMonthlySummary.containsKey(month)) {
         tempMonthlySummary[month] = {'income': 0.0, 'outcome': 0.0};
       }
-      if (transaction.jenisTransaksi == JenisTransaksi.income) {
+      if (transaction.jenisTransaksi == JenisTransaksi.pemasukan) {
         tempMonthlySummary[month]!['income'] = (tempMonthlySummary[month]!['income'] ?? 0.0) + transaction.nominal;
       } else {
         tempMonthlySummary[month]!['outcome'] = (tempMonthlySummary[month]!['outcome'] ?? 0.0) + transaction.nominal;
@@ -386,7 +450,7 @@ class _AnalysisPage extends State<AnalysisPage> {
                     trailing: Text(
                       NumberFormat.currency(locale: 'id', symbol: 'Rp ').format(transaction.nominal),
                       style: TextStyle(
-                        color: transaction.jenisTransaksi == JenisTransaksi.income ? Colors.green : Colors.red,
+                        color: transaction.jenisTransaksi == JenisTransaksi.pemasukan ? Colors.green : Colors.red,
                         fontWeight: FontWeight.bold,
                       ),
                     ),

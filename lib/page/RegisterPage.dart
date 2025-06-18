@@ -26,17 +26,18 @@ class _RegisterPage extends State<RegisterPage>{
   bool _isLoading = false;
   String? _errorMessage;
   bool _obscurePassword = true;
+  final String _api_url = 'https://ac-interracial-ent-audio.trycloudflare.com';
 
-  Future<dynamic> mockRegister() async{
-    setState(() {
-      _isLoading = true;
-      _errorMessage = 'Error Register Test';
-    });
-
-    await Future.delayed(Duration(seconds: 10));
-    AuthService.saveToken('token');
-    Navigator.pushReplacement(context, MaterialPageRoute(builder: (context)=> HomePage()));
-  }
+  // Future<dynamic> mockRegister() async{
+  //   setState(() {
+  //     _isLoading = true;
+  //     _errorMessage = 'Error Register Test';
+  //   });
+  //
+  //   await Future.delayed(Duration(seconds: 10));
+  //   AuthService.saveToken('token');
+  //   Navigator.pushReplacement(context, MaterialPageRoute(builder: (context)=> HomePage()));
+  // }
 
   Future<void> register() async{
     if(!_formKey.currentState!.validate()){
@@ -48,7 +49,7 @@ class _RegisterPage extends State<RegisterPage>{
       _errorMessage = null;
     });
 
-    final url = Uri.parse('localhost:8000:/api/user');
+    final url = Uri.parse('$_api_url/api/register');
     final header = {
       'Content-type' : 'application/json'
     };
@@ -67,19 +68,26 @@ class _RegisterPage extends State<RegisterPage>{
 
       if(response.statusCode == 201){
         final data = json.decode(response.body);
-        final token = data['token'];
+        final token = data['data']['token'];
 
+        if(token == null || token !is String){
+          setState(() {
+            _errorMessage = "Gagal Login, Token Tidak Valid";
+          });
+        }
+        
+        print(token);
         AuthService.saveToken(token);
         Navigator.pushReplacement(context, MaterialPageRoute(builder: (context) => HomePage()));
       } else {
         final error = json.decode(response.body);
         setState(() {
-          _errorMessage = error['message'] ?? 'Gagal Login Ulangi Kembali';
+          _errorMessage = error['errors']['message'][0] ?? 'Gagal Login Ulangi Kembali';
         });
       }
     } catch (e){
       setState(() {
-        _errorMessage = 'Gagal Register Ulangi Lagi!';
+        _errorMessage = 'Gagal Register Ulangi Lagi! $e';
       });
     } finally {
       setState(() {
@@ -111,12 +119,14 @@ class _RegisterPage extends State<RegisterPage>{
                 SizedBox(height: 10),
 
                 if(_errorMessage != null)
-                  Text(
-                      _errorMessage!,
-                      style: TextStyle(
-                          color: Colors.redAccent,
-                          fontWeight: FontWeight.w900,
-                          fontSize: 20
+                  Padding(padding: EdgeInsets.symmetric(horizontal: MediaQuery.of(context).size.width * 0.10),
+                      child: Text(
+                          _errorMessage!,
+                          style: TextStyle(
+                              color: Colors.redAccent,
+                              fontWeight: FontWeight.w900,
+                              fontSize: 12
+                          )
                       )
                   ),
 
@@ -183,7 +193,7 @@ class _RegisterPage extends State<RegisterPage>{
 
                 _isLoading? Center(child: CircularProgressIndicator(color: Color(0xff7971ea))) :
                 ElevatedButton(
-                    onPressed: mockRegister,
+                    onPressed: register,
                     child: Text(
                       "Register",
                       style: TextStyle(

@@ -15,15 +15,11 @@ class ChatBotPage extends StatefulWidget {
 }
 
 class _ChatBotPage extends State<ChatBotPage>{
+  final String _api_url = 'https://ac-interracial-ent-audio.trycloudflare.com';
   final TextEditingController _chatController = TextEditingController();
   bool _isLoading = false;
-  String? _errorMessage = "yuhu";
-  final List<Message> _messages = [
-    Message(text: "Hello what can i do for u?", isUser: false),
-    Message(text: "What is 2*2", isUser: true),
-    Message(text: "Umm...5?", isUser: false),
-    Message(text: "Stupid Ass Niggas, Learn More, u are useless piece of shit. Nigga Nigga Nigga Nigga Nigga", isUser: true)
-  ];
+  String? _errorMessage;
+  List<Message> _messages = [];
 
   Future<void> _sendMessage() async{
     final message = _chatController.text.trim();
@@ -35,14 +31,14 @@ class _ChatBotPage extends State<ChatBotPage>{
 
     _chatController.clear();
 
-    final url = Uri.parse('http://localhost:8080:/api/chatbot');
+    final url = Uri.parse('$_api_url:/api/chatbot/ask');
     final token = await AuthService.getToken();
     if(token == null){
       throw Exception('User Unauthorized');
     }
     final header = {
       'Content-type' : 'application/json',
-      'Authorization' : 'Bearer $token'
+      'Authorization' : token
     };
     final body = jsonEncode({
       'prompt' : message
@@ -50,18 +46,29 @@ class _ChatBotPage extends State<ChatBotPage>{
     try{
       final response = await http.post(url, headers: header, body: body);
       if(response.statusCode == 200){
-        final chatResponse = jsonDecode(response.body);
+        final chatResponse = jsonDecode(response.body)['data'];
         _messages.add(Message(text: chatResponse, isUser: false));
+        setState(() {
+          _isLoading = false;
+          _errorMessage = null;
+        });
       } else {
         final error = jsonDecode(response.body);
         setState(() {
-          _errorMessage = error['message']??"Tidak bisa menggunakan AI coba lagi";
+          _errorMessage = error['errors']['message']??"Tidak bisa menggunakan AI coba lagi";
+          _isLoading = false;
         });
-        SnackbarUtil.showError(context,_errorMessage);
       }
     } catch (e){
-      throw Exception(e);
+      setState(() {
+        _errorMessage = "Gagal Chat dengan Chatbot harap Coba Lagi : $e";
+        _isLoading = false;
+      });
     }
+    Future.delayed(Duration(seconds: 5));
+    setState(() {
+      _errorMessage = null;
+    });
   }
 
   @override

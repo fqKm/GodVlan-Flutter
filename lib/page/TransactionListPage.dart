@@ -22,98 +22,57 @@ class _TransactionListPage extends State<TransactionListPage>{
   List<Transaksi> _transactions = [];
   bool _isLoading = true;
   final storage = FlutterSecureStorage();
-  String? _errorMessage = null;
+  String? _errorMessage;
+  int? _selectedYear;
+  List<int> _availableYears = [];
+  final String _api_url = 'https://ac-interracial-ent-audio.trycloudflare.com';
 
-  Future<void> refreshTransactions() async {
-    print('TransactionListPage: Menerima permintaan refresh dari HomePage');
-    await _mockLoadTransaction(); // Memanggil metode load data yang sudah ada
-  }
   @override
   void initState() {
     super.initState();
-    _mockLoadTransaction();
+    _initializeYears();
+    fetchTransactionFromApi();
   }
 
-  Future<void> _mockLoadTransaction() async{
-      setState(() {
-        _isLoading = true; // Set loading state to true
-        _errorMessage = null; // Clear previous error
-      });
-
-      try {
-        await _fetchTransactionFromLocal();
-      } catch (e) {
-        // Tangani error jika _fetchTransactionFromLocal gagal
-        setState(() {
-          _errorMessage = 'Gagal memuat transaksi lokal: $e';
-        });
-      } finally {
-        setState(() {
-          _isLoading = false; // <--- SET LOADING KE FALSE DI SINI
-        });
-      }
+  void _initializeYears() {
+    final currentYear = DateTime.now().year;
+    for (int i = 0; i < 4; i++) {
+      _availableYears.add(currentYear - i);
+    }
+    _selectedYear = currentYear;
   }
-  Future<void> _loadTransaction() async {
+
+  Future<void> fetchTransactionFromApi({int? year}) async{
     setState(() {
       _isLoading = true;
       _errorMessage = null;
     });
+    final int tahun = year ?? DateTime.now().year;
+    final DateTime startDate = DateTime(tahun, 1, 1);
+    final DateTime endDate = DateTime((tahun + 1), 1, 1);
 
-    try {
-      // await _fetchTransactionFromApi();
-    } catch (e) {
-      print('gagal fetch dari API : $e. Mencoba fetch dari sqlite..');
-      setState(() {
-        _errorMessage = 'Gagal memuat data dari server. Menampilkan data offline.';
-      });
-      await _fetchTransactionFromLocal();
-    } finally {
-      setState(() {
-        _isLoading = false;
-      });
-  }
-  }
+    String startDateStr = DateFormat('yyyy-MM-dd').format(startDate);
+    String endDateStr = DateFormat('yyyy-MM-dd').format(endDate);
 
-  Future<void> _fetchTransactionFromLocal() async {
-    try {
-      final localTransactions = await SqliteHelper.instance.getAllTransaction();
-      setState(() {
-        _transactions = localTransactions;
-        _errorMessage = null;
-      });
-    } catch (e) {
-      setState(() {
-        _errorMessage = 'Gagal memuat transaksi dari penyimpanan lokal: $e';
-      });
-    }
-  }
-
-  Future<void> _syncTransactionToSQLite(List<Transaksi> newTransactions) async {
-    final sqliteHelper = SqliteHelper.instance;
-
-    for (var transaction in newTransactions){
-      await sqliteHelper.insertTransaction(transaction);
-    }
-  }
-
-  Future<void> _fetchTransactionFromApi() async{
-    final url = Uri.parse('localhost:8000:/api/transaction');
+    final url = Uri.parse('$_api_url/api/transaction/history/date_range?start_date=$startDateStr&end_date=$endDateStr');
     final token = await AuthService.getToken();
     if(token == null) {
-      throw Exception("User UnAuthorized");
+      setState(() {
+        _errorMessage = "User Unauthorized. Harap Login Kembali";
+        _isLoading = false;
+      });
+      return;
     }
     final header = {
       'Content-type' : 'application/json',
-      'Authorization' : 'Bearer : $token'
+      'Authorization' : token
     };
 
     try {
       final response = await http.get(url, headers: header);
       if (response.statusCode == 200){
-        List<dynamic> data = json.decode(response.body);
+        List<dynamic> data = json.decode(response.body)['data'];
         List<Transaksi> fetchedTransaction = data.map((json) => Transaksi.fromJson(json)).toList();
-
-        await _syncTransactionToSQLite(fetchedTransaction);
 
         setState(() {
           _transactions = fetchedTransaction;
@@ -122,15 +81,21 @@ class _TransactionListPage extends State<TransactionListPage>{
       } else {
         final error = json.decode(response.body);
         setState(() {
-          _errorMessage = error['message'] ?? 'Gagal Memuat Transaksi';
+          _errorMessage = error["errors"]['message'] ?? 'Gagal Memuat Transaksi';
+          _isLoading = false;
         });
       }
     } on http.ClientException catch (e){
-      throw Exception('Tidak dapat terhubung ke server');
+      setState(() {
+        _errorMessage= ('Tidak dapat terhubung ke server. $e');
+        _isLoading = false;
+      });
     } catch (e){
-      _errorMessage = 'Terjadi Kesalahan saat memuat transaksi. Coba Lagi : $e';
+      setState(() {
+        _errorMessage = 'Terjadi Kesalahan saat memuat transaksi. Coba Lagi : $e';
+        _isLoading = false;
+      });
     }
-
   }
 
   @override
@@ -146,102 +111,131 @@ class _TransactionListPage extends State<TransactionListPage>{
         actions: [
           IconButton(
             icon: const Icon(Icons.refresh, color: Color(0xff7971ea),),
-            onPressed: _mockLoadTransaction,
+            onPressed: () => fetchTransactionFromApi(),
             tooltip: 'Refresh Transaksi',
           )
         ],
       ),
-      body: _isLoading
-          ? const Center(child: CircularProgressIndicator())
-          : _errorMessage != null
-          ? Center(
-        child: Padding(
+      body:
+      Padding(
           padding: const EdgeInsets.all(16.0),
           child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              Text(
-                _errorMessage!,
-                style: const TextStyle(color: Colors.red, fontSize: 16),
-                textAlign: TextAlign.center,
+              DropdownButtonFormField<int?>(
+                decoration: const InputDecoration(
+                  labelText: 'Tahun',
+                  border: OutlineInputBorder(),
+                  contentPadding: EdgeInsets.symmetric(horizontal: 10, vertical: 0)
+                ),
+                value: _selectedYear,
+                items: [
+                  const DropdownMenuItem(value: null, child: Text('Semua Tahun')),
+                  ..._availableYears.map((year) =>
+                      DropdownMenuItem(value: year, child: Text(year.toString()))
+                  ),
+                ],
+                onChanged: (int? newValue) {
+                  setState(() {
+                    _selectedYear = newValue;
+                  });
+                  fetchTransactionFromApi(year: _selectedYear);
+                },
               ),
-              const SizedBox(height: 16),
-              ElevatedButton(
-                onPressed: _mockLoadTransaction,
-                child: const Text('Coba Lagi'),
+
+              _isLoading
+                  ? const Center(child: CircularProgressIndicator())
+                  : _errorMessage != null
+                  ? Center(
+                child: Padding(
+                  padding: const EdgeInsets.all(16.0),
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Text(
+                        _errorMessage!,
+                        style: const TextStyle(color: Colors.red, fontSize: 16),
+                        textAlign: TextAlign.center,
+                      ),
+                      const SizedBox(height: 16),
+                      ElevatedButton(
+                        onPressed: () => fetchTransactionFromApi,
+                        child: const Text('Coba Lagi'),
+                      ),
+                    ],
+                  ),
+                ),
+              )
+                  : _transactions.isEmpty
+                  ? const Center(
+                child: Text('Belum ada transaksi.'),
+              )
+                  : SingleChildScrollView(
+                scrollDirection: Axis.horizontal,
+                child: DataTable(
+                  columnSpacing: 24.0,
+                  dataRowMinHeight: 48.0,
+                  dataRowMaxHeight: 60.0,
+                  showCheckboxColumn: false,
+                  columns: const <DataColumn>[
+                    DataColumn(
+                      label: Text(
+                        'Tanggal',
+                        style: TextStyle(fontWeight: FontWeight.bold, color: Color(0xff7971ea)),
+                      ),
+                    ),
+                    DataColumn(
+                      label: Text(
+                        'Deskripsi',
+                        style: TextStyle(fontWeight: FontWeight.bold, color: Color(0xff7971ea)),
+                      ),
+                    ),
+                    DataColumn(
+                      label: Text(
+                        'Nominal',
+                        style: TextStyle(fontWeight: FontWeight.bold, color: Color(0xff7971ea)),
+                        textAlign: TextAlign.right,
+                      ),
+                      numeric: true,
+                    )
+                  ],
+                  rows: _transactions.map((transaction) {
+                    return DataRow(
+                      onSelectChanged: (isSelected) {
+                        if (isSelected ?? false) {
+                          print("Yuhu");
+                        }
+                      },
+                      cells: <DataCell>[
+                        DataCell(Text(
+                            DateFormat('dd MMM yyyy').format(transaction.createdAt), style: TextStyle(color: Color(0xff7971ea)))),
+                        DataCell(
+                          SizedBox(
+                            width: 150,
+                            child: Text(
+                              transaction.deskripsi,
+                              style: TextStyle(color: Color(0xff7971ea)),
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                          ),
+                        ),
+                        DataCell(
+                          Text(
+                            NumberFormat.currency(locale: 'id', symbol: 'Rp ').format(transaction.nominal),
+                            textAlign: TextAlign.right,
+                            style: TextStyle(
+                              color: transaction.jenisTransaksi == JenisTransaksi.pemasukan ? Colors.green : Color(0xffff004d),
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                        ),
+                      ],
+                    );
+                  }).toList(),
+                ),
               ),
             ],
-          ),
-        ),
+          )
       )
-          : _transactions.isEmpty
-          ? const Center(
-        child: Text('Belum ada transaksi.'),
-      )
-          : SingleChildScrollView(
-        scrollDirection: Axis.horizontal, // Agar tabel bisa discroll horizontal
-        child: DataTable(
-          columnSpacing: 24.0, // Jarak antar kolom
-          dataRowMinHeight: 48.0,
-          dataRowMaxHeight: 60.0,
-          showCheckboxColumn: false,
-          columns: const <DataColumn>[
-            DataColumn(
-              label: Text(
-                'Tanggal',
-                style: TextStyle(fontWeight: FontWeight.bold, color: Color(0xff7971ea)),
-              ),
-            ),
-            DataColumn(
-              label: Text(
-                'Deskripsi',
-                style: TextStyle(fontWeight: FontWeight.bold, color: Color(0xff7971ea)),
-              ),
-            ),
-            DataColumn(
-              label: Text(
-                'Nominal',
-                style: TextStyle(fontWeight: FontWeight.bold, color: Color(0xff7971ea)),
-                textAlign: TextAlign.right,
-              ),
-              numeric: true,
-            )
-          ],
-          rows: _transactions.map((transaction) {
-            return DataRow(
-              onSelectChanged: (isSelected) {
-                if (isSelected ?? false) {
-                  print("Yuhu");
-                }
-              },
-              cells: <DataCell>[
-                DataCell(Text(
-                    DateFormat('dd MMM yyyy').format(transaction.createdAt), style: TextStyle(color: Color(0xff7971ea)))),
-                DataCell(
-                  SizedBox(
-                    width: 150,
-                    child: Text(
-                      transaction.deskripsi,
-                      style: TextStyle(color: Color(0xff7971ea)),
-                      overflow: TextOverflow.ellipsis,
-                    ),
-                  ),
-                ),
-                DataCell(
-                  Text(
-                    NumberFormat.currency(locale: 'id', symbol: 'Rp ').format(transaction.nominal),
-                    textAlign: TextAlign.right,
-                    style: TextStyle(
-                      color: transaction.jenisTransaksi == JenisTransaksi.income ? Colors.green : Color(0xffff004d),
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                ),
-              ],
-            );
-          }).toList(),
-        ),
-      ),
     );
   }
 }

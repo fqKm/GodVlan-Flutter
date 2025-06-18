@@ -23,19 +23,20 @@ class _LoginPage extends State<LoginPage>{
   bool _isLoading = false;
   String? _errorMessage;
   bool _obscurePassword = true;
+  final String _api_url = 'https://ac-interracial-ent-audio.trycloudflare.com';
 
-  Future<dynamic> _mockLogin() async {
-    setState(() {
-      _errorMessage = "Error Login Test";
-      _isLoading = true;
-    });
-    await Future.delayed(Duration(seconds: 10));
-    setState(() {
-      _isLoading = false;
-    });
-    AuthService.saveToken("token");
-    Navigator.pushReplacement(context, MaterialPageRoute(builder: (context)=> HomePage()));
-  }
+  // Future<dynamic> _mockLogin() async {
+  //   setState(() {
+  //     _errorMessage = "Error Login Test";
+  //     _isLoading = true;
+  //   });
+  //   await Future.delayed(Duration(seconds: 10));
+  //   setState(() {
+  //     _isLoading = false;
+  //   });
+  //   AuthService.saveToken("token");
+  //   Navigator.pushReplacement(context, MaterialPageRoute(builder: (context)=> HomePage()));
+  // }
 
   Future<void> login() async {
     if(!_formKey.currentState!.validate()){
@@ -47,7 +48,7 @@ class _LoginPage extends State<LoginPage>{
       _errorMessage = null;
     });
 
-    final url = Uri.parse('localhost:8000:/api/user/login');
+    final url = Uri.parse('$_api_url/api/login');
     final header = {
       'Content-type' : 'application/json'
     };
@@ -62,8 +63,12 @@ class _LoginPage extends State<LoginPage>{
       );
       if(response.statusCode == 200){
         final data = json.decode(response.body);
-        final token = data['token'];
-
+        final token = data['data']['token'];
+        if(token == null || token !is String){
+          setState(() {
+            _errorMessage = "Gagal Login, Token Tidak Valid";
+          });
+        }
         AuthService.saveToken(token);
         Navigator.pushReplacement(context, MaterialPageRoute(builder: (context) => HomePage()));
       }
@@ -71,12 +76,12 @@ class _LoginPage extends State<LoginPage>{
       else{
         final error = json.decode(response.body);
         setState(() {
-          _errorMessage = error['message'] ?? 'Gagal Login Ulangi Kembali';
+          _errorMessage = error['errors']['message'][0]?? 'Gagal Login Ulangi Kembali';
         });
       }
     } catch (e){
       setState(() {
-        _errorMessage = "Gagal Login Ulangi Kembali";
+        _errorMessage = "Gagal Login Ulangi Kembali $e";
       });
     } finally {
       setState(() {
@@ -160,7 +165,7 @@ class _LoginPage extends State<LoginPage>{
                     ),
 
                     _isLoading? Center(child:CircularProgressIndicator(color: Color(0xff7971ea))) : ElevatedButton(
-                        onPressed: _mockLogin,
+                        onPressed: login,
                         child: Text(
                             "Login",
                             style: TextStyle(

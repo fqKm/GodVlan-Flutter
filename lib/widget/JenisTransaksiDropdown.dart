@@ -22,8 +22,8 @@ class _JenisTransaksiDropdown extends State<JenisTransaksiDropdown>{
       width: MediaQuery.of(context).size.width * 0.80,
       dropdownMenuEntries: <DropdownMenuEntry<String?>>
       [
-        DropdownMenuEntry(value: "income", label: "Pemasukan"),
-        DropdownMenuEntry(value: "outcome", label: "Pengeluaran")
+        DropdownMenuEntry(value: "pemasukan", label: "Pemasukan"),
+        DropdownMenuEntry(value: "pengeluaran", label: "Pengeluaran")
       ],
       textStyle: const TextStyle(
         color: Color(0xff7971ea)

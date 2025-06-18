@@ -21,7 +21,7 @@ class ChatBubble extends StatelessWidget{
         Color(0xffdfe2fe),
         borderRadius: BorderRadius.only(
           topLeft: Radius.circular(isUser? 16 : 0),
-          topRight: Radius.circular(isUser? 0 : 0),
+          topRight: Radius.circular(isUser? 0 : 16),
           bottomLeft: Radius.circular(16),
           bottomRight: Radius.circular(16)
         )
