@@ -1,7 +1,6 @@
 import 'dart:convert';
 
 import 'package:flutter/material.dart';
-import 'package:godvlan/db/SqliteHelper.dart';
 import 'package:godvlan/model/Transaksi.dart';
 import 'package:godvlan/page/EditTransactionPage.dart';
 import 'package:godvlan/service/AuthService.dart';
@@ -15,8 +14,8 @@ import 'AddTransactionPage.dart';
 final GlobalKey<_TransactionListPage> transactionListPageKey = GlobalKey<_TransactionListPage>();
 class TransactionListPage extends StatefulWidget{
   const TransactionListPage({
-    Key? key, // Pastikan ada Key parameter
-  }) : super(key: key); // Meneruskan key ke super constructor
+    Key? key,
+  }) : super(key: key);
 
   @override
   _TransactionListPage createState() => _TransactionListPage();
