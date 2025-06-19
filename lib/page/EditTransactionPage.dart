@@ -69,7 +69,6 @@ class _EditTransactionPage extends State<EditTransactionPage>{
     });
     final String? transactionId = widget.transactionId;
     final url = Uri.parse('$_api_url/api/transaction/history/$transactionId');
-    print(url);
     final token = await AuthService.getToken();
     if (token == null){
       throw Exception('User Unauthorized');
@@ -82,7 +81,6 @@ class _EditTransactionPage extends State<EditTransactionPage>{
       final response = await http.get(url, headers: header);
       if (response.statusCode == 200){
         final data = jsonDecode(response.body)['data'];
-        print(data);
         setState(() {
           transaksi = Transaksi.fromJson(data);
           _jenisTransaksi = transaksi!.jenisTransaksi.name;
@@ -92,7 +90,6 @@ class _EditTransactionPage extends State<EditTransactionPage>{
           _isLoading = false;
           _errorMessage = null;
         });
-        print(_jenisTransaksi);
       } else {
         final error = jsonDecode(response.body);
         setState(() {
@@ -101,13 +98,11 @@ class _EditTransactionPage extends State<EditTransactionPage>{
         });
       }
     } on http.ClientException catch (e){
-      print(' apiurl :==== error : $e');
       setState(() {
         _errorMessage= ('Tidak dapat terhubung ke server. $e');
         _isLoading = false;
       });
     } catch (e){
-      print(' apiurl :==== error : $e');
       setState(() {
         _errorMessage = 'Terjadi Kesalahan saat memuat transaksi. Coba Lagi : $e';
         _isLoading = false;
@@ -145,7 +140,6 @@ class _EditTransactionPage extends State<EditTransactionPage>{
       final response = await http.patch(url, headers: header, body:body);
       if (response.statusCode == 200){
         final data = json.decode(response.body)['data'];
-        print(data);
         setState(() {
           transaksi = Transaksi.fromJson(data);
           _isLoading = false;
