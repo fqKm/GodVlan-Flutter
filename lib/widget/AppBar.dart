@@ -24,7 +24,7 @@ class MyAppBar extends StatelessWidget {
         actions: [
           IconButton(onPressed: (){
             Navigator.push(context, MaterialPageRoute(builder: (context)=>ProfilePage()));
-          }, icon: Icon(Icons.settings, color: Color(0xFF7971EA),))
+          }, icon: Icon(Icons.person, color: Color(0xFF7971EA),))
         ]
     );
   }

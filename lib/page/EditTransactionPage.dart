@@ -159,6 +159,44 @@ class _EditTransactionPage extends State<EditTransactionPage>{
     }
   }
 
+  Future<dynamic> deleteTransaction() async {
+    setState(() {
+      _isLoading = true;
+      _errorMessage = null;
+    });
+
+    final String? transactionId = widget.transactionId;
+    final url = Uri.parse('$_api_url/api/transaction/delete/$transactionId');
+    final token = await AuthService.getToken();
+    if (token == null){
+      throw Exception('User Unauthorized');
+    }
+    final header = {
+      'Content-type' : 'application/json',
+      'Authorization' :  token
+    };
+
+    try {
+      final response = await http.delete(url, headers: header);
+      if(response.statusCode == 200 && jsonDecode(response.body)['data'] == true){
+        setState(() {
+          _isLoading = false;
+          _errorMessage = null;
+        });
+        Navigator.pushReplacement((context), MaterialPageRoute(builder: (context)=>HomePage()));
+      } else {
+        final error = json.decode(response.body);
+        setState(() {
+          _isLoading = false;
+          _errorMessage = error['errors']['message'] ?? 'Gagal Menghapus Transaksi';
+        });
+      }
+    } catch (e){
+      _isLoading = false;
+      _errorMessage = 'Terjadi Kesalahan saat menghapus transaksi. Coba Lagi : $e';
+    }
+
+  }
   Future<void> _selectDate() async {
     DateTime? pickedDate = await showDatePicker(
       context: context,
@@ -278,8 +316,30 @@ class _EditTransactionPage extends State<EditTransactionPage>{
                                 )
                             ),
                           ],
-                        ))
+                        )
+                    ),
 
+                    SizedBox(height: MediaQuery.of(context).size.height * 0.01),
+
+
+                    Padding(padding: EdgeInsets.symmetric(horizontal: MediaQuery.of(context).size.width * 0.10), child:
+                    Row(mainAxisAlignment: MainAxisAlignment.end, children: [
+                      _isLoading? Center(child:CircularProgressIndicator(color: Color(0xff7971ea))) : ElevatedButton(
+                        style: ButtonStyle(
+                          backgroundColor: MaterialStateProperty.all(Colors.redAccent),
+                        ),
+                          onPressed: deleteTransaction,
+                          child: Text(
+                              "Hapus Transaksi",
+                              style: TextStyle(
+                                  fontSize: 12,
+                                  color: Colors.white,
+                                  fontWeight: FontWeight.w900
+                              )
+                          )
+                      ),
+                    ],)
+                    )
                   ],
                 )
             )

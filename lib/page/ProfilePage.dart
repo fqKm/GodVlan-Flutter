@@ -168,7 +168,24 @@ class _ProfilePage extends State<ProfilePage>{
 
           SizedBox(height: MediaQuery.of(context).size.height * 0.40),
 
-          TextButton(onPressed: logout, child: Text("Logout")),
+          Padding(padding: EdgeInsets.symmetric(horizontal: MediaQuery.of(context).size.width * 0.10), child:
+          Row(mainAxisAlignment: MainAxisAlignment.end, children: [
+            _isLoading? Center(child:CircularProgressIndicator(color: Color(0xff7971ea))) : ElevatedButton(
+                style: ButtonStyle(
+                  backgroundColor: MaterialStateProperty.all(Colors.redAccent),
+                ),
+                onPressed: logout,
+                child: Text(
+                    "LogOut",
+                    style: TextStyle(
+                        fontSize: 12,
+                        color:  Colors.white,
+                        fontWeight: FontWeight.w900
+                    )
+                )
+            ),
+          ],)
+          )
         ],
       ),
     )
